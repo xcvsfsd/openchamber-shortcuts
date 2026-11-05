@@ -1,6 +1,6 @@
 {
   "name": "openchamber-shortcuts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "自定义快捷按钮：一键把常用命令/代码片段提交到会话",
   "private": true,
   "type": "module",
