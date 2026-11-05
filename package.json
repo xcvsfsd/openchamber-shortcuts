@@ -1,0 +1,34 @@
+{
+  "name": "openchamber-shortcuts",
+  "version": "0.1.0",
+  "description": "自定义快捷按钮：一键把常用命令/代码片段提交到会话",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": {
+      "openchamber": ">=2.3.3"
+    },
+    "contributes": {
+      "panel": {
+        "id": "shortcuts",
+        "name": "快捷命令",
+        "icon": "flash",
+        "entry": "panel/index.html"
+      },
+      "capabilities": [
+        "prompt"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@openchamber/sdk": "^2.3.3",
+    "@types/bun": "^1.4.2",
+    "typescript": "^5.9.2"
+  }
+}
