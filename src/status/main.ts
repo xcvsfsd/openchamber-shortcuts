@@ -15,7 +15,8 @@ button{padding:4px 10px;font-size:13px;border:1px solid var(--oc-border,#8888);b
 button.cmd{background:color-mix(in srgb,var(--primary,#3574f0) 14%,transparent);border-color:var(--primary,#3574f0)}
 button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#8b5cf6}
 .mut{font-size:12px;opacity:.7}
-</style><div class="grid" id="g"></div><div class="mut" id="out"></div>`;
+</style><div class="grid" id="g"></div><div class="mut" id="out"></div>
+<div class="mut" style="font-size:11px;opacity:.5">status v0.1.0-sessions直发</div>`;
 const g = document.querySelector('#g') as HTMLElement;
 const out = document.querySelector('#out') as HTMLElement;
 
