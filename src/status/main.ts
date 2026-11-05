@@ -1,8 +1,7 @@
-// Work Status 快捷区：放 Git 下面，一排按钮点即发。来源同面板：OpenChamber 配置。
+// Work Status 快捷区：命令 + 片段，显示描述点即发。来源同面板。
 import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
-import { COMPARE_SNIPPET, loadShortcuts, fire } from '../shared/shortcuts.ts';
-import { openCompareDialog, compareText } from '../shared/compare.ts';
+import { loadShortcuts, fire } from '../shared/shortcuts.ts';
 
 const host = connectHost();
 const root = document.querySelector<HTMLElement>('#root');
@@ -10,7 +9,7 @@ if (!root) throw new Error('Missing #root');
 
 root.innerHTML = `<style>
 body{margin:0;font:13px/1.5 system-ui,sans-serif}
-#root{padding:2px 4px;display:flex;position:relative;flex-direction:column;gap:6px}
+#root{padding:2px 4px;display:flex;flex-direction:column;gap:6px}
 .grid{display:flex;flex-wrap:wrap;gap:6px}
 button{padding:4px 10px;font-size:13px;border:1px solid var(--oc-border,#8888);border-radius:8px;color:var(--oc-fg,inherit);font-weight:700;cursor:pointer}
 button.cmd{background:color-mix(in srgb,var(--primary,#3574f0) 14%,transparent);border-color:var(--primary,#3574f0)}
@@ -22,21 +21,15 @@ const out = document.querySelector('#out') as HTMLElement;
 
 const paint = async (dir: string | null): Promise<void> => {
   g.innerHTML = '';
-  const { list } = await loadShortcuts(host, dir);
-  for (const sc of [...list, COMPARE_SNIPPET]) {
+  const { snippets, commands } = await loadShortcuts(host, dir);
+  for (const sc of [...commands, ...snippets]) {
     const b = document.createElement('button');
-    b.className = sc === COMPARE_SNIPPET ? 'snip' : 'cmd';
     b.textContent = sc.label;
-    b.title = sc.dialog === 'compare' ? '输入分支与 tag 后对比' : sc.text;
-    b.onclick = () => {
-      if (sc.dialog === 'compare') {
-        openCompareDialog(root, (branch, tag) => void fire(host, compareText(branch, tag), (t) => { out.textContent = t; }));
-        return;
-      }
-      void fire(host, sc.text, (t) => { out.textContent = t; });
-    };
+    b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
+    b.onclick = () => void fire(host, sc.text, (t) => { out.textContent = t; });
     g.appendChild(b);
   }
+  if (g.children.length === 0) g.innerHTML = '<span class="mut">暂无快捷</span>';
   const h = Math.ceil(root.getBoundingClientRect().height);
   void host.setHeight(h).catch(() => undefined);
 };

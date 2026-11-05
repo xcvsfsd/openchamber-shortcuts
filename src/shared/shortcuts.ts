@@ -1,42 +1,108 @@
-// 快捷按钮唯一来源：OpenChamber 配置（仓库 .openchamber/project.json 的 draftStarters）。
-// 插件只读不管理：去 设置→项目→起草器 里增删（可移入仓库），改完自动生效。
-// 另附一个内置代码片段：分支⇄Tag 对比。
+// 快捷来源（只读不管理）：
+// 1. opencode 片段库 ~/.config/opencode/snippet/*.md —— 按钮发正文，显示 description
+// 2. opencode 自定义命令（全局 snippet 同级 command/commands + 项目下 command/commands/.opencode/*）—— 显示 description，发 /name
+// 3. OpenChamber 本仓 .openchamber/project.json draftStarters —— description 能解析到就显示否则显示名发 /name
 import { HostRequestError, type HostClient } from '@openchamber/sdk';
 
-export type Shortcut = { label: string; text: string; dialog?: 'compare' };
+export type Shortcut = { label: string; text: string };
 
-type DraftStarter = { type?: string; name?: string };
-
-// 缺配置时的兜底，保证开箱可用
-const FALLBACK: Shortcut[] = [
-  { label: '/news', text: '/news' },
-  { label: '/ci', text: '/ci' },
-  { label: '/cd', text: '/cd' },
-  { label: '/tag', text: '/tag' },
-];
-
-// 内置代码片段：对比分支与 tag（不是 /ci）
-export const COMPARE_SNIPPET: Shortcut = {
-  label: '分支⇄Tag对比',
-  text: '',
-  dialog: 'compare',
+// frontmatter 取 description，没有返回 null
+const frontDescription = (content: string): string | null => {
+  const m = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!m) return null;
+  const d = m[1].split('\n').find((l) => /^\s*description\s*:/.test(l));
+  if (!d) return null;
+  return d.replace(/^\s*description\s*:\s*/, '').replace(/^["']|["']$/g, '').trim() || null;
 };
 
-export const loadShortcuts = async (host: HostClient, dir: string | null): Promise<{ list: Shortcut[]; fromConfig: boolean }> => {
-  if (dir) {
+// 去 frontmatter 取正文
+const bodyOf = (content: string): string => content.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '').trim();
+
+const listMd = async (host: HostClient, dir: string): Promise<string[]> => {
+  try {
+    const { entries } = await host.listDir(dir);
+    return entries.filter((e) => e.kind === 'file' && e.name.endsWith('.md')).map((e) => e.name);
+  } catch {
+    return [];
+  }
+};
+
+const readText = async (host: HostClient, path: string): Promise<string | null> => {
+  try {
+    const { content } = await host.readFile(path);
+    return content;
+  } catch {
+    return null;
+  }
+};
+
+export type ShortcutData = {
+  snippets: Shortcut[];
+  commands: Shortcut[];
+  hint: string;
+};
+
+export const loadShortcuts = async (host: HostClient, projectDir: string | null): Promise<ShortcutData> => {
+  const snippets: Shortcut[] = [];
+  const commands: Shortcut[] = [];
+  const seen = new Set<string>();
+  const descByName = new Map<string, string>();
+
+  // 1. 片段库：发正文
+  const SNIP = '~/.config/opencode/snippet';
+  for (const f of await listMd(host, SNIP)) {
+    const c = await readText(host, `${SNIP}/${f}`);
+    if (c === null) continue;
+    const body = bodyOf(c);
+    if (!body) continue;
+    const name = f.replace(/\.md$/, '');
+    const label = frontDescription(c) ?? name;
+    const key = `snip:${body}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    snippets.push({ label, text: body });
+    descByName.set(name, label);
+  }
+
+  // 2. opencode 命令：全局 + 项目，显示 description，发 /name
+  const cmdDirs = projectDir
+    ? [SNIP.replace('snippet', 'command'), SNIP.replace('snippet', 'commands'), 'command', 'commands', '.opencode/command', '.opencode/commands']
+    : [SNIP.replace('snippet', 'command'), SNIP.replace('snippet', 'commands')];
+  for (const d of cmdDirs) {
+    for (const f of await listMd(host, d)) {
+      const c = await readText(host, `${d}/${f}`);
+      if (c === null) continue;
+      const name = f.replace(/\.md$/, '');
+      const label = frontDescription(c) ?? name;
+      descByName.set(name, label);
+      const key = `cmd:/${name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      commands.push({ label, text: `/${name}` });
+    }
+  }
+
+  // 3. OpenChamber 本仓 draftStarters：description 能对上就显示否则显示名
+  if (projectDir) {
     try {
       const { content } = await host.readFile('.openchamber/project.json');
-      const cfg = JSON.parse(content) as { draftStarters?: DraftStarter[] };
-      if (Array.isArray(cfg.draftStarters) && cfg.draftStarters.length > 0) {
-        const list = cfg.draftStarters
-          .filter((s) => typeof s?.name === 'string' && s.name.length > 0)
-          .slice(0, 30)
-          .map((s) => ({ label: `/${s.name as string}`, text: `/${s.name as string}` }));
-        if (list.length > 0) return { list, fromConfig: true };
+      const cfg = JSON.parse(content) as { draftStarters?: { type?: string; name?: string }[] };
+      if (Array.isArray(cfg.draftStarters)) {
+        for (const s of cfg.draftStarters.slice(0, 30)) {
+          if (typeof s?.name !== 'string' || !s.name) continue;
+          const key = `cmd:/${s.name}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          commands.unshift({ label: descByName.get(s.name) ?? s.name, text: `/${s.name}` });
+        }
       }
-    } catch { /* 无文件/无权限/格式不对都走兜底 */ }
+    } catch { /* 无文件照常用上面两类 */ }
   }
-  return { list: FALLBACK, fromConfig: false };
+
+  const hint = snippets.length + commands.length === 0
+    ? '无可用快捷：片段放 ~/.config/opencode/snippet/*.md命令放 command/ 或本仓 draftStarters'
+    : '来自 opencode 片段/命令与本仓 draftStarters去各自位置管理';
+  return { snippets, commands, hint };
 };
 
 // 一键提交：直接发；无会话/忙则填入输入框

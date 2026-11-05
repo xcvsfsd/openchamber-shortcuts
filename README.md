@@ -1,18 +1,14 @@
 # openchamber-shortcuts
 
-OpenChamber 快捷按钮扩展：把配置里的常用命令和代码片段一键提交到当前会话。
+OpenChamber 快捷按钮：点即把常用命令/片段提交到当前会话。按钮只显示描述，不显示英文名。
 
 ## 按钮来源（插件只读不管理）
 
-仓库 `.openchamber/project.json` 的 `draftStarters`：
+1. 片段库 `~/.config/opencode/snippet/*.md`：按钮发正文，显示 frontmatter `description`（如 ci→对比并tag）
+2. opencode 自定义命令：全局 `~/.config/opencode/command|commands/*.md` + 项目下 `command|commands|.opencode/*`：显示 `description`，发 `/name`
+3. 本仓 `.openchamber/project.json` 的 `draftStarters`：能对上描述就显示否则显示名，发 `/name`
 
-```json
-{ "version": 1, "draftStarters": [{ "type": "command", "name": "news" }] }
-```
-
-- 去 设置→项目→起草器 里增删，可移入仓库，改完面板自动读到
-- 本仓没有就显示兜底 `/news /ci /cd /tag`
-- 另有一个内置代码片段按钮「分支⇄Tag对比」：让 agent 对比当前分支与最新 tag 的提交和文件差异并总结
+管理去各自位置：片段/命令改 md 文件，起草器去设置→项目（可移入仓库）。全都没有就显示提示。
 
 ## 安装
 
@@ -22,7 +18,7 @@ OpenChamber 快捷按钮扩展：把配置里的常用命令和代码片段一�
 /home/liaoz/code/openchamber-shortcuts
 ```
 
-批准 `prompt` + `files`（读本仓配置文件）能力。Work Status 节列表里打开「快捷命令」拖到 Git 下面。
+批准 `prompt` + `files` + `filesystem`（读片段与配置）能力。Work Status 节列表里打开「快捷命令」拖到 Git 下面。
 
 ## 发版
 

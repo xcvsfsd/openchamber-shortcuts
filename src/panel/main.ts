@@ -1,8 +1,7 @@
-// 快捷命令面板：按钮来自 OpenChamber 配置（.openchamber/project.json draftStarters），插件只读不管理。
+// 快捷命令面板：按钮来自三处配置（片段库/opencode命令/本仓draftStarters），显示描述，插件只读不管理。
 import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
-import { COMPARE_SNIPPET, loadShortcuts, fire, type Shortcut } from '../shared/shortcuts.ts';
-import { openCompareDialog, compareText } from '../shared/compare.ts';
+import { loadShortcuts, fire, type Shortcut } from '../shared/shortcuts.ts';
 
 const host = connectHost();
 const root = document.querySelector<HTMLElement>('#root');
@@ -13,7 +12,7 @@ root.innerHTML = `
 :root{color-scheme:light dark}
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.6 system-ui,sans-serif}
-#root{padding:10px;display:flex;position:relative;flex-direction:column;gap:10px;min-height:100%;max-width:100%;overflow-x:hidden}
+#root{padding:10px;display:flex;flex-direction:column;gap:10px;min-height:100%;max-width:100%;overflow-x:hidden}
 h3{margin:4px 0 0;font-size:13px;opacity:.65;font-weight:600}
 .grid{display:flex;flex-wrap:wrap;gap:8px}
 button{padding:8px 14px;font-size:14px;border:1px solid var(--oc-border,#8888);border-radius:8px;background:var(--oc-elevated,inherit);color:var(--oc-fg,inherit);cursor:pointer}
@@ -22,7 +21,7 @@ button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#
 button:disabled{opacity:.5}
 .mut{font-size:13px;opacity:.7}
 </style>
-<h3>快捷命令</h3>
+<h3>命令</h3>
 <div class="grid" id="cmds"></div>
 <h3>代码片段</h3>
 <div class="grid" id="snips"></div>
@@ -41,26 +40,20 @@ const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   const b = document.createElement('button');
   b.className = cls;
   b.textContent = sc.label;
-  b.title = sc.dialog === 'compare' ? '输入分支与 tag 后对比' : sc.text;
-  b.onclick = () => {
-    if (sc.dialog === 'compare') {
-      openCompareDialog(root, (branch, tag) => void fire(host, compareText(branch, tag), say));
-      return;
-    }
-    void fire(host, sc.text, say);
-  };
+  b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
+  b.onclick = () => void fire(host, sc.text, say);
   return b;
 };
 
 const paint = async (dir: string | null): Promise<void> => {
-  const { list, fromConfig } = await loadShortcuts(host, dir);
+  const { snippets, commands, hint } = await loadShortcuts(host, dir);
   cmdsEl.innerHTML = '';
-  for (const sc of list) cmdsEl.appendChild(mkButton(sc, 'cmd'));
+  for (const sc of commands) cmdsEl.appendChild(mkButton(sc, 'cmd'));
+  if (commands.length === 0) cmdsEl.innerHTML = '<span class="mut">暂无</span>';
   snipsEl.innerHTML = '';
-  snipsEl.appendChild(mkButton(COMPARE_SNIPPET, 'snip'));
-  srcEl.textContent = fromConfig
-    ? '来自本仓 .openchamber/project.json draftStarters，去设置→项目→起草器管理'
-    : '本仓无 draftStarters显示兜底去设置→项目→起草器添加（可移入仓库）';
+  for (const sc of snippets) snipsEl.appendChild(mkButton(sc, 'snip'));
+  if (snippets.length === 0) snipsEl.innerHTML = '<span class="mut">暂无</span>';
+  srcEl.textContent = hint;
 };
 
 host.onReady((ctx) => {

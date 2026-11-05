@@ -25,7 +25,15 @@
         "entry": "status/index.html",
         "title": "快捷命令",
         "height": 120
-      }
+      },
+      "filesystem": [
+        "~/.config/opencode/snippet",
+        "~/.config/opencode/snippet/**",
+        "~/.config/opencode/command",
+        "~/.config/opencode/command/**",
+        "~/.config/opencode/commands",
+        "~/.config/opencode/commands/**"
+      ]
     }
   },
   "scripts": {
