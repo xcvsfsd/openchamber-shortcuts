@@ -20,7 +20,7 @@ export const colorFor = (label: string): string => {
 
 // 按显示名（描述）字符串排序
 export const sortByLabel = (list: Shortcut[]): Shortcut[] =>
-  [...list].sort((a, b) => a.label.localeCompare(b.label, 'zh-CN'));
+  [...list].sort((a, b) => a.label.localeCompare(b.label, 'zh-CN', { numeric: true }));
 
 // frontmatter 取 description，没有返回 null
 const frontDescription = (content: string): string | null => {
