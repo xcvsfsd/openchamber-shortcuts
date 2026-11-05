@@ -45,12 +45,13 @@ const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
   b.textContent = sc.label;
   b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
-  b.onclick = () => void fire(host, sc.label, sc.text, say, curDir);
+  b.onclick = () => void fire(host, sc.label, sc.text, say, curDir, hasSession);
   return b;
 };
 
 let lastSig = '';
 let curDir: string | null = null;
+let hasSession = false;
 const paint = async (dir: string | null, force = false): Promise<void> => {
   const data = await loadShortcuts(host, dir);
   const sig = JSON.stringify([data.snippets, data.commands]);
@@ -77,5 +78,6 @@ document.addEventListener('visibilitychange', () => {
 host.onReady((ctx) => {
   applyHostReady(ctx, document.documentElement);
   curDir = ctx.directory ?? null;
+  hasSession = !!ctx.session;
   void paint(curDir, true);
 });

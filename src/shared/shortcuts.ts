@@ -128,29 +128,32 @@ export const loadShortcuts = async (host: HostClient, projectDir: string | null)
 };
 
 // 一键提交：有会话直接发；无会话建新会话直发；忙则填入输入框
-export const fire = async (host: HostClient, label: string, text: string, say: (t: string) => void, dir?: string | null): Promise<void> => {
-  try {
-    const r = await host.prompt({ text, send: true });
-    if (r.sent === 'sent') {
-      say('已提交到会话');
-      return;
-    }
-    say(`未直接发出（${r.sent}），已填入输入框`);
-    await host.prompt({ text }).catch(() => undefined);
-    return;
-  } catch (e) {
-    if (!(e instanceof HostRequestError)) {
-      say(String(e));
-      return;
-    }
-    if (e.code === 'SESSION_BUSY') {
-      say('会话忙已填入输入框稍后发送');
+export const fire = async (host: HostClient, label: string, text: string, say: (t: string) => void, dir?: string | null, hasSession?: boolean): Promise<void> => {
+  // 有会话才调 prompt；无会话直接建，避免宿主弹“请先打开一个会话”
+  if (hasSession !== false) {
+    try {
+      const r = await host.prompt({ text, send: true });
+      if (r.sent === 'sent') {
+        say('已提交到会话');
+        return;
+      }
+      say(`未直接发出（${r.sent}），已填入输入框`);
       await host.prompt({ text }).catch(() => undefined);
       return;
-    }
-    if (e.code !== 'NO_SESSION') {
-      say(`${e.code}`);
-      return;
+    } catch (e) {
+      if (!(e instanceof HostRequestError)) {
+        say(String(e));
+        return;
+      }
+      if (e.code === 'SESSION_BUSY') {
+        say('会话忙已填入输入框稍后发送');
+        await host.prompt({ text }).catch(() => undefined);
+        return;
+      }
+      if (e.code !== 'NO_SESSION') {
+        say(`${e.code}`);
+        return;
+      }
     }
   }
   // 无会话：有项目就带项目建新会话直发；连项目都没选则指引先选项目

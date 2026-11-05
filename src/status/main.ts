@@ -22,6 +22,7 @@ const out = document.querySelector('#out') as HTMLElement;
 
 let lastSig = '';
 let curDir: string | null = null;
+let hasSession = false;
 
 const paint = async (dir: string | null): Promise<void> => {
   const data = await loadShortcuts(host, dir);
@@ -37,7 +38,7 @@ const paint = async (dir: string | null): Promise<void> => {
     b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
     b.textContent = sc.label;
     b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
-    b.onclick = () => void fire(host, sc.label, sc.text, (t) => { out.textContent = t; }, curDir);
+    b.onclick = () => void fire(host, sc.label, sc.text, (t) => { out.textContent = t; }, curDir, hasSession);
     g.appendChild(b);
   }
   if (g.children.length === 0) g.innerHTML = '<span class="mut">暂无快捷</span>';
@@ -55,5 +56,6 @@ setInterval(() => { if (!document.hidden) void paint(curDir); }, 30000);
 host.onReady((ctx) => {
   applyHostReady(ctx, document.documentElement);
   curDir = ctx.directory ?? null;
+  hasSession = !!ctx.session;
   void paint(curDir);
 });
