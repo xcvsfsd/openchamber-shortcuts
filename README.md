@@ -1,5 +1,7 @@
 # openchamber-shortcuts
 
+Custom shortcut buttons for OpenChamber: one click sends a frequently used command/snippet to the current session. Chinese interface.
+
 OpenChamber 快捷按钮：点即把常用命令/片段提交到当前会话。按钮只显示描述，不显示英文名。
 
 ## 按钮来源（插件只读不管理）
@@ -12,13 +14,19 @@ OpenChamber 快捷按钮：点即把常用命令/片段提交到当前会话。�
 
 ## 安装
 
-设置 → 扩展 → 添加文件夹：
+设置 → 扩展 → 粘贴 Git 地址添加：
 
 ```text
-/home/liaoz/code/openchamber-shortcuts
+https://github.com/xcvsfsd/openchamber-shortcuts
 ```
 
+本地开发可用文件夹路径安装（`/home/liaoz/code/openchamber-shortcuts`）
+
 批准 `prompt` + `files` + `filesystem`（读片段与配置）能力。Work Status 节列表里打开「快捷命令」拖到 Git 下面。
+
+## License
+
+MIT
 
 ## 发版
 
