@@ -16,7 +16,7 @@ button.cmd{background:color-mix(in srgb,var(--primary,#3574f0) 14%,transparent);
 button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#8b5cf6}
 .mut{font-size:12px;opacity:.7}
 </style><div class="grid" id="g"></div><div class="mut" id="out"></div>
-<div class="mut" style="font-size:11px;opacity:.5">status v0.1.1-无会话直建</div>`;
+<div class="mut" style="font-size:11px;opacity:.5">status v0.1.2-建会话熔断</div>`;
 const g = document.querySelector('#g') as HTMLElement;
 const out = document.querySelector('#out') as HTMLElement;
 

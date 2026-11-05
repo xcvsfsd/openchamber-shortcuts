@@ -162,15 +162,23 @@ export const fire = async (host: HostClient, label: string, text: string, say: (
     return;
   }
   say('无会话建新会话中…');
-  try {
+  // 宿主建会话可能长时间不回：35 秒熔断，后台若完成再更正提示
+  let settled = false;
+  const done = (t: string): void => {
+    settled = true;
+    say(t);
+  };
+  const run = (async () => {
     let projectId: string | undefined;
     try {
       const ps = await host.listProjects();
       projectId = ps.projects.find((p) => p.directory === dir)?.id;
     } catch { /* 找不到就按当前项目建 */ }
     const r = await host.startSession({ providerId: 'shortcuts', id: label.slice(0, 100) || 'shortcut', title: label.slice(0, 180), url: '', text, projectId });
-    say(r.sent === 'sent' ? '已建新会话并提交' : `新会话已建发送状态：${r.sent}进新会话手动发送`);
-  } catch (e) {
-    say(e instanceof HostRequestError ? `建会话失败：${e.code}先选项目再试` : '建会话失败');
-  }
+    done(r.sent === 'sent' ? '已建新会话并提交' : `新会话已建发送状态：${r.sent}进新会话手动发送`);
+  })().catch((e: unknown) => {
+    done(e instanceof HostRequestError ? `建会话失败：${e.code}先选项目再试` : '建会话失败');
+  });
+  await Promise.race([run, new Promise((r) => setTimeout(r, 35000))]);
+  if (!settled) say('建会话较慢可能已在后台创建去会话列表确认没有再重发');
 };

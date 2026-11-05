@@ -27,7 +27,7 @@ button:disabled{opacity:.5}
 <div class="grid" id="snips"></div>
 <div class="mut" id="out">点按钮直接发到当前会话</div>
 <div class="mut" id="src"></div>
-<div class="mut" style="font-size:11px;opacity:.5">panel v0.1.1-无会话直建</div>
+<div class="mut" style="font-size:11px;opacity:.5">panel v0.1.2-建会话熔断</div>
 `;
 
 const $ = <T extends HTMLElement>(id: string): T => document.querySelector(`#${id}`) as T;
