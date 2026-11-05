@@ -2,6 +2,7 @@
 import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
 import { COMPARE_SNIPPET, loadShortcuts, fire, type Shortcut } from '../shared/shortcuts.ts';
+import { openCompareDialog, compareText } from '../shared/compare.ts';
 
 const host = connectHost();
 const root = document.querySelector<HTMLElement>('#root');
@@ -12,7 +13,7 @@ root.innerHTML = `
 :root{color-scheme:light dark}
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.6 system-ui,sans-serif}
-#root{padding:10px;display:flex;flex-direction:column;gap:10px;min-height:100%;max-width:100%;overflow-x:hidden}
+#root{padding:10px;display:flex;position:relative;flex-direction:column;gap:10px;min-height:100%;max-width:100%;overflow-x:hidden}
 h3{margin:4px 0 0;font-size:13px;opacity:.65;font-weight:600}
 .grid{display:flex;flex-wrap:wrap;gap:8px}
 button{padding:8px 14px;font-size:14px;border:1px solid var(--oc-border,#8888);border-radius:8px;background:var(--oc-elevated,inherit);color:var(--oc-fg,inherit);cursor:pointer}
@@ -40,8 +41,14 @@ const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   const b = document.createElement('button');
   b.className = cls;
   b.textContent = sc.label;
-  b.title = sc.text;
-  b.onclick = () => void fire(host, sc.text, say);
+  b.title = sc.dialog === 'compare' ? '输入分支与 tag 后对比' : sc.text;
+  b.onclick = () => {
+    if (sc.dialog === 'compare') {
+      openCompareDialog(root, (branch, tag) => void fire(host, compareText(branch, tag), say));
+      return;
+    }
+    void fire(host, sc.text, say);
+  };
   return b;
 };
 

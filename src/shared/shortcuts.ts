@@ -3,7 +3,7 @@
 // 另附一个内置代码片段：分支⇄Tag 对比。
 import { HostRequestError, type HostClient } from '@openchamber/sdk';
 
-export type Shortcut = { label: string; text: string };
+export type Shortcut = { label: string; text: string; dialog?: 'compare' };
 
 type DraftStarter = { type?: string; name?: string };
 
@@ -18,7 +18,8 @@ const FALLBACK: Shortcut[] = [
 // 内置代码片段：对比分支与 tag（不是 /ci）
 export const COMPARE_SNIPPET: Shortcut = {
   label: '分支⇄Tag对比',
-  text: '对比当前分支与最新tag：先列出所有tag确定最新tag，再用git log和git diff对比当前分支与该tag的提交差异和文件变更，最后总结变化点',
+  text: '',
+  dialog: 'compare',
 };
 
 export const loadShortcuts = async (host: HostClient, dir: string | null): Promise<{ list: Shortcut[]; fromConfig: boolean }> => {
