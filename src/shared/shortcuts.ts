@@ -6,13 +6,21 @@ import { HostRequestError, type HostClient } from '@openchamber/sdk';
 
 export type Shortcut = { label: string; text: string };
 
-// 不同按钮不同色：按名哈希取色深浅主题都可读
+// 不同按钮不同色：按名 FNV-1a 取色深浅主题都可读
 const PALETTE = ['#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
 export const colorFor = (label: string): string => {
-  let h = 0;
-  for (const ch of label) h = (h * 31 + ch.codePointAt(0)!) >>> 0;
+  let h = 0x811c9dc5;
+  const bytes = new TextEncoder().encode(label);
+  for (const b of bytes) {
+    h ^= b;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
   return PALETTE[h % PALETTE.length] as string;
 };
+
+// 按显示名（描述）字符串排序
+export const sortByLabel = (list: Shortcut[]): Shortcut[] =>
+  [...list].sort((a, b) => a.label.localeCompare(b.label, 'zh-CN'));
 
 // frontmatter 取 description，没有返回 null
 const frontDescription = (content: string): string | null => {
@@ -107,9 +115,12 @@ export const loadShortcuts = async (host: HostClient, projectDir: string | null)
     } catch { /* 无文件照常用上面两类 */ }
   }
 
-  const byLabel = (a: Shortcut, b: Shortcut): number => a.label.localeCompare(b.label, 'zh-CN');
-  snippets.sort(byLabel);
-  commands.sort(byLabel);
+  const sortedSnippets = sortByLabel(snippets);
+  const sortedCommands = sortByLabel(commands);
+  snippets.length = 0;
+  snippets.push(...sortedSnippets);
+  commands.length = 0;
+  commands.push(...sortedCommands);
   const hint = snippets.length + commands.length === 0
     ? '无可用快捷：片段放 ~/.config/opencode/snippet/*.md命令放 command/ 或本仓 draftStarters'
     : '来自 opencode 片段/命令与本仓 draftStarters去各自位置管理';

@@ -1,7 +1,7 @@
 // Work Status 快捷区：命令 + 片段，显示描述点即发。来源同面板。
 import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
-import { loadShortcuts, fire, colorFor } from '../shared/shortcuts.ts';
+import { loadShortcuts, fire, colorFor, sortByLabel } from '../shared/shortcuts.ts';
 
 const host = connectHost();
 const root = document.querySelector<HTMLElement>('#root');
@@ -29,7 +29,7 @@ const paint = async (dir: string | null): Promise<void> => {
   lastSig = sig;
   const { snippets, commands } = data;
   g.innerHTML = '';
-  for (const sc of [...commands, ...snippets]) {
+  for (const sc of sortByLabel([...commands, ...snippets])) {
     const b = document.createElement('button');
     const c = colorFor(sc.label);
     b.style.borderColor = c;
