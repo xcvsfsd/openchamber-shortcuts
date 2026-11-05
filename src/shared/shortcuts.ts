@@ -127,18 +127,38 @@ export const loadShortcuts = async (host: HostClient, projectDir: string | null)
   return { snippets, commands, hint };
 };
 
-// 一键提交：直接发；无会话/忙则填入输入框
-export const fire = async (host: HostClient, text: string, say: (t: string) => void): Promise<void> => {
+// 一键提交：有会话直接发；无会话建新会话直发；忙则填入输入框
+export const fire = async (host: HostClient, label: string, text: string, say: (t: string) => void): Promise<void> => {
   try {
     const r = await host.prompt({ text, send: true });
-    say(r.sent === 'sent' ? '已提交到会话' : `未直接发出（${r.sent}），已填入输入框`);
-    if (r.sent !== 'sent') await host.prompt({ text }).catch(() => undefined);
-  } catch (e) {
-    if (e instanceof HostRequestError && (e.code === 'NO_SESSION' || e.code === 'SESSION_BUSY')) {
-      say(e.code === 'NO_SESSION' ? '无会话已填入输入框' : '会话忙已填入输入框稍后发送');
-      await host.prompt({ text }).catch(() => undefined);
-    } else {
-      say(e instanceof HostRequestError ? `${e.code}` : '发送失败');
+    if (r.sent === 'sent') {
+      say('已提交到会话');
+      return;
     }
+    say(`未直接发出（${r.sent}），已填入输入框`);
+    await host.prompt({ text }).catch(() => undefined);
+    return;
+  } catch (e) {
+    if (!(e instanceof HostRequestError)) {
+      say(String(e));
+      return;
+    }
+    if (e.code === 'SESSION_BUSY') {
+      say('会话忙已填入输入框稍后发送');
+      await host.prompt({ text }).catch(() => undefined);
+      return;
+    }
+    if (e.code !== 'NO_SESSION') {
+      say(`${e.code}`);
+      return;
+    }
+  }
+  // 无会话：建新会话并直发（需 sessions 能力）
+  say('无会话建新会话中…');
+  try {
+    const r = await host.startSession({ providerId: 'shortcuts', id: label.slice(0, 100) || 'shortcut', title: label.slice(0, 180), url: '', text });
+    say(r.sent === 'sent' ? '已建新会话并提交' : `新会话已建发送状态：${r.sent}`);
+  } catch (e) {
+    say(e instanceof HostRequestError ? `建会话失败：${e.code}` : '建会话失败');
   }
 };

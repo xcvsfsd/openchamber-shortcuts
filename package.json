@@ -19,7 +19,8 @@
       },
       "capabilities": [
         "prompt",
-        "files"
+        "files",
+        "sessions"
       ],
       "statusSection": {
         "entry": "status/index.html",

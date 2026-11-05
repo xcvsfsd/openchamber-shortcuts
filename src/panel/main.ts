@@ -44,7 +44,7 @@ const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
   b.textContent = sc.label;
   b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
-  b.onclick = () => void fire(host, sc.text, say);
+  b.onclick = () => void fire(host, sc.label, sc.text, say);
   return b;
 };
 
