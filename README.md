@@ -4,6 +4,10 @@ Custom shortcut buttons for OpenChamber: one click sends a frequently used comma
 
 OpenChamber 快捷按钮：点即把常用命令/片段提交到当前会话。按钮只显示描述，不显示英文名。
 
+<img width="389" height="710" alt="image" src="https://github.com/user-attachments/assets/5a2fdf9d-9fb4-43a5-8b30-9bc1c614350f" />
+<img width="1307" height="906" alt="image" src="https://github.com/user-attachments/assets/f99ec707-d674-4885-8f1c-143033292984" />
+
+
 ## 按钮来源（插件只读不管理）
 
 1. 片段库 `~/.config/opencode/snippet/*.md`：按钮发正文，显示 frontmatter `description`（如 ci→对比并tag）
