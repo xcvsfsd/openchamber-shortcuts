@@ -18,7 +18,8 @@
         "entry": "panel/index.html"
       },
       "capabilities": [
-        "prompt"
+        "prompt",
+        "files"
       ],
       "statusSection": {
         "entry": "status/index.html",

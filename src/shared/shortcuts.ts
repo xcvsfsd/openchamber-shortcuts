@@ -1,31 +1,41 @@
-// 快捷按钮共享逻辑：预置 + 存储 + 一键提交，面板与 Work Status 共用。
+// 快捷按钮唯一来源：OpenChamber 配置（仓库 .openchamber/project.json 的 draftStarters）。
+// 插件只读不管理：去 设置→项目→起草器 里增删（可移入仓库），改完自动生效。
+// 另附一个内置代码片段：分支⇄Tag 对比。
 import { HostRequestError, type HostClient } from '@openchamber/sdk';
 
 export type Shortcut = { label: string; text: string };
 
-export const PRESETS: Shortcut[] = [
+type DraftStarter = { type?: string; name?: string };
+
+// 缺配置时的兜底，保证开箱可用
+const FALLBACK: Shortcut[] = [
   { label: '/news', text: '/news' },
   { label: '/ci', text: '/ci' },
   { label: '/cd', text: '/cd' },
   { label: '/tag', text: '/tag' },
 ];
 
-export const loadCustom = async (host: HostClient): Promise<Shortcut[]> => {
-  try {
-    const v = await host.storage.get('shortcuts');
-    if (Array.isArray(v)) {
-      return (v as unknown[]).filter(
-        (x): x is Shortcut =>
-          typeof x === 'object' && x !== null &&
-          typeof (x as Shortcut).label === 'string' && typeof (x as Shortcut).text === 'string',
-      ).slice(0, 30);
-    }
-  } catch { /* 无存储照常用预置 */ }
-  return [];
+// 内置代码片段：对比分支与 tag（不是 /ci）
+export const COMPARE_SNIPPET: Shortcut = {
+  label: '分支⇄Tag对比',
+  text: '对比当前分支与最新tag：先列出所有tag确定最新tag，再用git log和git diff对比当前分支与该tag的提交差异和文件变更，最后总结变化点',
 };
 
-export const saveCustom = (host: HostClient, list: Shortcut[]): void => {
-  void host.storage.set('shortcuts', JSON.parse(JSON.stringify(list))).catch(() => undefined);
+export const loadShortcuts = async (host: HostClient, dir: string | null): Promise<{ list: Shortcut[]; fromConfig: boolean }> => {
+  if (dir) {
+    try {
+      const { content } = await host.readFile('.openchamber/project.json');
+      const cfg = JSON.parse(content) as { draftStarters?: DraftStarter[] };
+      if (Array.isArray(cfg.draftStarters) && cfg.draftStarters.length > 0) {
+        const list = cfg.draftStarters
+          .filter((s) => typeof s?.name === 'string' && s.name.length > 0)
+          .slice(0, 30)
+          .map((s) => ({ label: `/${s.name as string}`, text: `/${s.name as string}` }));
+        if (list.length > 0) return { list, fromConfig: true };
+      }
+    } catch { /* 无文件/无权限/格式不对都走兜底 */ }
+  }
+  return { list: FALLBACK, fromConfig: false };
 };
 
 // 一键提交：直接发；无会话/忙则填入输入框

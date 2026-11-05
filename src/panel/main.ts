@@ -1,8 +1,7 @@
-// 快捷命令面板：预置 + 自加按钮一键提交到当前会话。
-// 同一份逻辑也在 Work Status 快捷区（status），见 shared/shortcuts.ts。
+// 快捷命令面板：按钮来自 OpenChamber 配置（.openchamber/project.json draftStarters），插件只读不管理。
 import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
-import { PRESETS, loadCustom, saveCustom, fire, type Shortcut } from '../shared/shortcuts.ts';
+import { COMPARE_SNIPPET, loadShortcuts, fire, type Shortcut } from '../shared/shortcuts.ts';
 
 const host = connectHost();
 const root = document.querySelector<HTMLElement>('#root');
@@ -18,84 +17,46 @@ h3{margin:4px 0 0;font-size:13px;opacity:.65;font-weight:600}
 .grid{display:flex;flex-wrap:wrap;gap:8px}
 button{padding:8px 14px;font-size:14px;border:1px solid var(--oc-border,#8888);border-radius:8px;background:var(--oc-elevated,inherit);color:var(--oc-fg,inherit);cursor:pointer}
 button.cmd{background:color-mix(in srgb,var(--primary,#3574f0) 14%,transparent);border-color:var(--primary,#3574f0);font-weight:700}
+button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#8b5cf6;font-weight:700}
 button:disabled{opacity:.5}
-button.danger{padding:4px 8px;font-size:12px}
-.row{display:flex;gap:8px;align-items:center}
-input{flex:1;min-width:0;padding:7px 9px;font-size:14px;border:1px solid var(--oc-border,#8888);border-radius:8px;background:var(--oc-elevated,inherit);color:var(--oc-fg,inherit)}
 .mut{font-size:13px;opacity:.7}
 </style>
-<h3>常用命令</h3>
-<div class="grid" id="preset"></div>
-<h3>我的快捷</h3>
-<div class="grid" id="custom"></div>
-<div class="row">
-  <input id="new-label" placeholder="名称，如 发版检查" maxlength="20" />
-  <input id="new-text" placeholder="发送内容，如 /ci" maxlength="500" />
-  <button id="btn-add" title="添加快捷按钮">＋</button>
-</div>
+<h3>快捷命令</h3>
+<div class="grid" id="cmds"></div>
+<h3>代码片段</h3>
+<div class="grid" id="snips"></div>
 <div class="mut" id="out">点按钮直接发到当前会话</div>
+<div class="mut" id="src"></div>
 `;
 
 const $ = <T extends HTMLElement>(id: string): T => document.querySelector(`#${id}`) as T;
-const presetEl = $('preset');
-const customEl = $('custom');
+const cmdsEl = $('cmds');
+const snipsEl = $('snips');
 const outEl = $('out');
+const srcEl = $('src');
 const say = (t: string): void => { outEl.textContent = t; };
 
-const mkButton = (sc: Shortcut): HTMLButtonElement => {
+const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   const b = document.createElement('button');
-  b.className = 'cmd';
+  b.className = cls;
   b.textContent = sc.label;
   b.title = sc.text;
   b.onclick = () => void fire(host, sc.text, say);
   return b;
 };
 
-const renderCustom = (list: Shortcut[]): void => {
-  customEl.innerHTML = '';
-  if (list.length === 0) {
-    customEl.innerHTML = '<span class="mut">暂无下面加一个</span>';
-    return;
-  }
-  for (const sc of list) {
-    const wrap = document.createElement('span');
-    wrap.className = 'row';
-    wrap.appendChild(mkButton(sc));
-    const del = document.createElement('button');
-    del.className = 'danger';
-    del.textContent = '✕';
-    del.title = `删除 ${sc.label}`;
-    del.onclick = () => {
-      const next = list.filter((x) => x !== sc);
-      saveCustom(host, next);
-      void refresh();
-    };
-    wrap.appendChild(del);
-    customEl.appendChild(wrap);
-  }
-};
-
-const refresh = async (): Promise<void> => {
-  presetEl.innerHTML = '';
-  for (const sc of PRESETS) presetEl.appendChild(mkButton(sc));
-  renderCustom(await loadCustom(host));
-};
-
-$('btn-add').onclick = () => {
-  const label = ($('new-label') as unknown as HTMLInputElement).value.trim().slice(0, 20);
-  const text = ($('new-text') as unknown as HTMLInputElement).value.trim().slice(0, 500);
-  if (!label || !text) { say('名称和内容都要填'); return; }
-  loadCustom(host).then((list) => {
-    if (list.length >= 30) { say('最多 30 个'); return; }
-    const next = [...list, { label, text }];
-    saveCustom(host, next);
-    ($('new-label') as unknown as HTMLInputElement).value = '';
-    ($('new-text') as unknown as HTMLInputElement).value = '';
-    void refresh();
-  }).catch(() => { say('添加失败'); });
+const paint = async (dir: string | null): Promise<void> => {
+  const { list, fromConfig } = await loadShortcuts(host, dir);
+  cmdsEl.innerHTML = '';
+  for (const sc of list) cmdsEl.appendChild(mkButton(sc, 'cmd'));
+  snipsEl.innerHTML = '';
+  snipsEl.appendChild(mkButton(COMPARE_SNIPPET, 'snip'));
+  srcEl.textContent = fromConfig
+    ? '来自本仓 .openchamber/project.json draftStarters，去设置→项目→起草器管理'
+    : '本仓无 draftStarters显示兜底去设置→项目→起草器添加（可移入仓库）';
 };
 
 host.onReady((ctx) => {
   applyHostReady(ctx, document.documentElement);
-  void refresh();
+  void paint(ctx.directory ?? null);
 });
