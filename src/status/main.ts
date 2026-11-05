@@ -37,7 +37,7 @@ const paint = async (dir: string | null): Promise<void> => {
     b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
     b.textContent = sc.label;
     b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
-    b.onclick = () => void fire(host, sc.label, sc.text, (t) => { out.textContent = t; });
+    b.onclick = () => void fire(host, sc.label, sc.text, (t) => { out.textContent = t; }, curDir);
     g.appendChild(b);
   }
   if (g.children.length === 0) g.innerHTML = '<span class="mut">暂无快捷</span>';

@@ -128,7 +128,7 @@ export const loadShortcuts = async (host: HostClient, projectDir: string | null)
 };
 
 // 一键提交：有会话直接发；无会话建新会话直发；忙则填入输入框
-export const fire = async (host: HostClient, label: string, text: string, say: (t: string) => void): Promise<void> => {
+export const fire = async (host: HostClient, label: string, text: string, say: (t: string) => void, dir?: string | null): Promise<void> => {
   try {
     const r = await host.prompt({ text, send: true });
     if (r.sent === 'sent') {
@@ -153,12 +153,21 @@ export const fire = async (host: HostClient, label: string, text: string, say: (
       return;
     }
   }
-  // 无会话：建新会话并直发（需 sessions 能力）
+  // 无会话：有项目就带项目建新会话直发；连项目都没选则指引先选项目
+  if (!dir) {
+    say('先在左侧选择项目再点按钮');
+    return;
+  }
   say('无会话建新会话中…');
   try {
-    const r = await host.startSession({ providerId: 'shortcuts', id: label.slice(0, 100) || 'shortcut', title: label.slice(0, 180), url: '', text });
-    say(r.sent === 'sent' ? '已建新会话并提交' : `新会话已建发送状态：${r.sent}`);
+    let projectId: string | undefined;
+    try {
+      const ps = await host.listProjects();
+      projectId = ps.projects.find((p) => p.directory === dir)?.id;
+    } catch { /* 找不到就按当前项目建 */ }
+    const r = await host.startSession({ providerId: 'shortcuts', id: label.slice(0, 100) || 'shortcut', title: label.slice(0, 180), url: '', text, projectId });
+    say(r.sent === 'sent' ? '已建新会话并提交' : `新会话已建发送状态：${r.sent}进新会话手动发送`);
   } catch (e) {
-    say(e instanceof HostRequestError ? `建会话失败：${e.code}` : '建会话失败');
+    say(e instanceof HostRequestError ? `建会话失败：${e.code}先选项目再试` : '建会话失败');
   }
 };
