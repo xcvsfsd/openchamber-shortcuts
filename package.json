@@ -19,7 +19,12 @@
       },
       "capabilities": [
         "prompt"
-      ]
+      ],
+      "statusSection": {
+        "entry": "status/index.html",
+        "title": "快捷命令",
+        "height": 120
+      }
     }
   },
   "scripts": {
