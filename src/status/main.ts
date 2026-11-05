@@ -19,9 +19,16 @@ button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#
 const g = document.querySelector('#g') as HTMLElement;
 const out = document.querySelector('#out') as HTMLElement;
 
+let lastSig = '';
+let curDir: string | null = null;
+
 const paint = async (dir: string | null): Promise<void> => {
+  const data = await loadShortcuts(host, dir);
+  const sig = JSON.stringify([data.snippets, data.commands]);
+  if (sig === lastSig) return;
+  lastSig = sig;
+  const { snippets, commands } = data;
   g.innerHTML = '';
-  const { snippets, commands } = await loadShortcuts(host, dir);
   for (const sc of [...commands, ...snippets]) {
     const b = document.createElement('button');
     b.textContent = sc.label;
@@ -39,7 +46,10 @@ new ResizeObserver(() => {
   void host.setHeight(h).catch(() => undefined);
 }).observe(root);
 
+setInterval(() => { if (!document.hidden) void paint(curDir); }, 30000);
+
 host.onReady((ctx) => {
   applyHostReady(ctx, document.documentElement);
-  void paint(ctx.directory ?? null);
+  curDir = ctx.directory ?? null;
+  void paint(curDir);
 });

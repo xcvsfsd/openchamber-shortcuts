@@ -21,7 +21,7 @@ button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#
 button:disabled{opacity:.5}
 .mut{font-size:13px;opacity:.7}
 </style>
-<h3>命令</h3>
+<div class="row"><h3 style="flex:1">命令</h3><button id="btn-refresh" title="重读配置">↻</button></div>
 <div class="grid" id="cmds"></div>
 <h3>代码片段</h3>
 <div class="grid" id="snips"></div>
@@ -45,8 +45,14 @@ const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   return b;
 };
 
-const paint = async (dir: string | null): Promise<void> => {
-  const { snippets, commands, hint } = await loadShortcuts(host, dir);
+let lastSig = '';
+let curDir: string | null = null;
+const paint = async (dir: string | null, force = false): Promise<void> => {
+  const data = await loadShortcuts(host, dir);
+  const sig = JSON.stringify([data.snippets, data.commands]);
+  if (!force && sig === lastSig) return;
+  lastSig = sig;
+  const { snippets, commands, hint } = data;
   cmdsEl.innerHTML = '';
   for (const sc of commands) cmdsEl.appendChild(mkButton(sc, 'cmd'));
   if (commands.length === 0) cmdsEl.innerHTML = '<span class="mut">暂无</span>';
@@ -56,7 +62,16 @@ const paint = async (dir: string | null): Promise<void> => {
   srcEl.textContent = hint;
 };
 
+$('btn-refresh').onclick = () => void paint(curDir, true);
+
+// 配置改完 30 秒内自动刷；切回可见立刻刷
+setInterval(() => { if (!document.hidden) void paint(curDir); }, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) void paint(curDir);
+});
+
 host.onReady((ctx) => {
   applyHostReady(ctx, document.documentElement);
-  void paint(ctx.directory ?? null);
+  curDir = ctx.directory ?? null;
+  void paint(curDir, true);
 });
