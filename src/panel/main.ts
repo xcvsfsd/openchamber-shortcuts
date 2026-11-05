@@ -27,7 +27,7 @@ button:disabled{opacity:.5}
 <div class="grid" id="snips"></div>
 <div class="mut" id="out">点按钮直接发到当前会话</div>
 <div class="mut" id="src"></div>
-<div class="mut" style="font-size:11px;opacity:.5">panel v0.1.2-建会话熔断</div>
+<div class="mut" style="font-size:11px;opacity:.5">panel v0.1.3-只发当前会话</div>
 `;
 
 const $ = <T extends HTMLElement>(id: string): T => document.querySelector(`#${id}`) as T;
@@ -45,7 +45,7 @@ const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
   b.textContent = sc.label;
   b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
-  b.onclick = () => void fire(host, sc.label, sc.text, say, curDir, hasSession);
+  b.onclick = () => void fire(host, sc.text, say, hasSession);
   return b;
 };
 

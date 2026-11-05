@@ -16,7 +16,7 @@ button.cmd{background:color-mix(in srgb,var(--primary,#3574f0) 14%,transparent);
 button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#8b5cf6}
 .mut{font-size:12px;opacity:.7}
 </style><div class="grid" id="g"></div><div class="mut" id="out"></div>
-<div class="mut" style="font-size:11px;opacity:.5">status v0.1.2-建会话熔断</div>`;
+<div class="mut" style="font-size:11px;opacity:.5">status v0.1.3-只发当前会话</div>`;
 const g = document.querySelector('#g') as HTMLElement;
 const out = document.querySelector('#out') as HTMLElement;
 
@@ -38,7 +38,7 @@ const paint = async (dir: string | null): Promise<void> => {
     b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
     b.textContent = sc.label;
     b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
-    b.onclick = () => void fire(host, sc.label, sc.text, (t) => { out.textContent = t; }, curDir, hasSession);
+    b.onclick = () => void fire(host, sc.text, (t) => { out.textContent = t; }, hasSession);
     g.appendChild(b);
   }
   if (g.children.length === 0) g.innerHTML = '<span class="mut">暂无快捷</span>';

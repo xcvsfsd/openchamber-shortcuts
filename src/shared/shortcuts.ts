@@ -127,58 +127,36 @@ export const loadShortcuts = async (host: HostClient, projectDir: string | null)
   return { snippets, commands, hint };
 };
 
-// 一键提交：有会话直接发；无会话建新会话直发；忙则填入输入框
-export const fire = async (host: HostClient, label: string, text: string, say: (t: string) => void, dir?: string | null, hasSession?: boolean): Promise<void> => {
-  // 有会话才调 prompt；无会话直接建，避免宿主弹“请先打开一个会话”
-  if (hasSession !== false) {
-    try {
-      const r = await host.prompt({ text, send: true });
-      if (r.sent === 'sent') {
-        say('已提交到会话');
-        return;
-      }
-      say(`未直接发出（${r.sent}），已填入输入框`);
-      await host.prompt({ text }).catch(() => undefined);
-      return;
-    } catch (e) {
-      if (!(e instanceof HostRequestError)) {
-        say(String(e));
-        return;
-      }
-      if (e.code === 'SESSION_BUSY') {
-        say('会话忙已填入输入框稍后发送');
-        await host.prompt({ text }).catch(() => undefined);
-        return;
-      }
-      if (e.code !== 'NO_SESSION') {
-        say(`${e.code}`);
-        return;
-      }
-    }
-  }
-  // 无会话：有项目就带项目建新会话直发；连项目都没选则指引先选项目
-  if (!dir) {
-    say('先在左侧选择项目再点按钮');
+// 一键提交到当前会话；无会话只提示不建（建会话走不通已移除）
+export const fire = async (host: HostClient, text: string, say: (t: string) => void, hasSession?: boolean): Promise<void> => {
+  if (hasSession === false) {
+    say('先打开或新建一个会话再点');
     return;
   }
-  say('无会话建新会话中…');
-  // 宿主建会话可能长时间不回：35 秒熔断，后台若完成再更正提示
-  let settled = false;
-  const done = (t: string): void => {
-    settled = true;
-    say(t);
-  };
-  const run = (async () => {
-    let projectId: string | undefined;
-    try {
-      const ps = await host.listProjects();
-      projectId = ps.projects.find((p) => p.directory === dir)?.id;
-    } catch { /* 找不到就按当前项目建 */ }
-    const r = await host.startSession({ providerId: 'shortcuts', id: label.slice(0, 100) || 'shortcut', title: label.slice(0, 180), url: '', text, projectId });
-    done(r.sent === 'sent' ? '已建新会话并提交' : `新会话已建发送状态：${r.sent}进新会话手动发送`);
-  })().catch((e: unknown) => {
-    done(e instanceof HostRequestError ? `建会话失败：${e.code}先选项目再试` : '建会话失败');
-  });
-  await Promise.race([run, new Promise((r) => setTimeout(r, 35000))]);
-  if (!settled) say('建会话较慢可能已在后台创建去会话列表确认没有再重发');
+  try {
+    const r = await host.prompt({ text, send: true });
+    if (r.sent === 'sent') {
+      say('已提交到会话');
+      return;
+    }
+    say(`未直接发出（${r.sent}），已填入输入框`);
+    await host.prompt({ text }).catch(() => undefined);
+    return;
+  } catch (e) {
+    if (!(e instanceof HostRequestError)) {
+      say(String(e));
+      return;
+    }
+    if (e.code === 'NO_SESSION') {
+      say('先打开或新建一个会话再点');
+      return;
+    }
+    if (e.code === 'SESSION_BUSY') {
+      say('会话忙已填入输入框稍后发送');
+      await host.prompt({ text }).catch(() => undefined);
+      return;
+    }
+    say(`${e.code}`);
+  }
 };
+
