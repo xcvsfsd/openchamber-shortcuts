@@ -99,6 +99,9 @@ export const loadShortcuts = async (host: HostClient, projectDir: string | null)
     } catch { /* 无文件照常用上面两类 */ }
   }
 
+  const byLabel = (a: Shortcut, b: Shortcut): number => a.label.localeCompare(b.label, 'zh-CN');
+  snippets.sort(byLabel);
+  commands.sort(byLabel);
   const hint = snippets.length + commands.length === 0
     ? '无可用快捷：片段放 ~/.config/opencode/snippet/*.md命令放 command/ 或本仓 draftStarters'
     : '来自 opencode 片段/命令与本仓 draftStarters去各自位置管理';
