@@ -1,7 +1,7 @@
 // 快捷命令面板：按钮来自三处配置（片段库/opencode命令/本仓draftStarters），显示描述，插件只读不管理。
 import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
-import { loadShortcuts, fire, type Shortcut } from '../shared/shortcuts.ts';
+import { loadShortcuts, fire, colorFor, type Shortcut } from '../shared/shortcuts.ts';
 
 const host = connectHost();
 const root = document.querySelector<HTMLElement>('#root');
@@ -39,6 +39,9 @@ const say = (t: string): void => { outEl.textContent = t; };
 const mkButton = (sc: Shortcut, cls: string): HTMLButtonElement => {
   const b = document.createElement('button');
   b.className = cls;
+  const c = colorFor(sc.label);
+  b.style.borderColor = c;
+  b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
   b.textContent = sc.label;
   b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
   b.onclick = () => void fire(host, sc.text, say);

@@ -6,6 +6,14 @@ import { HostRequestError, type HostClient } from '@openchamber/sdk';
 
 export type Shortcut = { label: string; text: string };
 
+// 不同按钮不同色：按名哈希取色深浅主题都可读
+const PALETTE = ['#3b82f6', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
+export const colorFor = (label: string): string => {
+  let h = 0;
+  for (const ch of label) h = (h * 31 + ch.codePointAt(0)!) >>> 0;
+  return PALETTE[h % PALETTE.length] as string;
+};
+
 // frontmatter 取 description，没有返回 null
 const frontDescription = (content: string): string | null => {
   const m = content.match(/^---\s*\n([\s\S]*?)\n---/);
