@@ -1,7 +1,7 @@
 {
   "name": "openchamber-shortcuts",
-  "version": "0.1.3",
-  "description": "自定义快捷按钮：一键把常用命令/代码片段提交到会话",
+  "version": "0.2.0",
+  "description": "自定义快捷按钮：一键把常用命令/代码片段提交到会话（只有状态区）",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -14,8 +14,7 @@
       "panel": {
         "id": "shortcuts",
         "name": "快捷命令",
-        "icon": "flash",
-        "entry": "panel/index.html"
+        "icon": "flash"
       },
       "capabilities": [
         "prompt",

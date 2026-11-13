@@ -1,4 +1,4 @@
-// 单文件 IIFE：OpenChamber 装扩展不构建，panel/main.js 必须提交。
+// 单文件 IIFE：OpenChamber 装扩展不构建，status/main.js 必须提交。
 // index.html 也是构建产物：写入版本查询串防浏览器缓存旧 main.js。
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -6,7 +6,6 @@ import { resolve } from 'node:path';
 const pkg = JSON.parse(await Bun.file(resolve('package.json')).text()) as { version?: string };
 const stamp = `${pkg.version ?? '0.0.0'}-${Date.now().toString(36)}`;
 for (const target of [
-  { entry: 'src/panel/main.ts', out: 'panel/main.js', html: 'panel/index.html' },
   { entry: 'src/status/main.ts', out: 'status/main.js', html: 'status/index.html' },
 ]) {
   const result = await Bun.build({
