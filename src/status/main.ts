@@ -25,8 +25,8 @@ button:disabled{opacity:.5}
 button[hidden]{display:none}
 .ref{padding:2px 8px;font-size:12px;font-weight:400;background:var(--oc-elevated,inherit)}
 .mut{font-size:12px;opacity:.7}
-.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;opacity:.75;font-variant-numeric:tabular-nums}
-.res{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;opacity:.75}
+.t{white-space:normal;word-break:break-all;font-size:11px;opacity:.75;font-variant-numeric:tabular-nums}
+.res{white-space:normal;word-break:break-all;font-size:11px;opacity:.75}
 .res.bad{color:#f87171;opacity:1}
 </style>
 <div class="grid" id="g"></div>
@@ -48,7 +48,9 @@ const now = (): string => new Date().toTimeString().slice(0, 8);
 
 const say = (text: string, bad = false): void => {
   out.textContent = text;
+  out.title = text;
   out.classList.toggle('bad', bad);
+  fit();
 };
 
 const fit = (): void => {
@@ -82,7 +84,7 @@ const paint = async (dir: string | null, force = false): Promise<void> => {
     b.style.background = `color-mix(in srgb, ${c} 16%, transparent)`;
     b.textContent = sc.label;
     b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
-    b.onclick = () => void fire(host, sc.text, (t) => { out.textContent = t; }, hasSession);
+    b.onclick = () => void fire(host, sc.text, (t) => say(t), hasSession);
     g.appendChild(b);
   }
   if (g.children.length === 0) g.innerHTML = '<span class="mut">暂无快捷</span>';
