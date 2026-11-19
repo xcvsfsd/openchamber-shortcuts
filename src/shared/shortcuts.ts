@@ -128,10 +128,26 @@ export const loadShortcuts = async (host: HostClient, projectDir: string | null)
 };
 
 // 一键提交到当前会话；无会话只提示不建（建会话走不通已移除）
-export const fire = async (host: HostClient, text: string, say: (t: string) => void, hasSession?: boolean): Promise<void> => {
+// autoSend=true：send:true 自动发送；false：只填入输入框不发送（底部开关控制）
+export const fire = async (host: HostClient, text: string, say: (t: string) => void, hasSession?: boolean, autoSend = true): Promise<void> => {
   if (hasSession === false) {
     say('先打开或新建一个会话再点');
     return;
+  }
+  // 关：只填入输入框，不自动发送
+  if (!autoSend) {
+    try {
+      await host.prompt({ text });
+      say('已填入输入框，未自动发送');
+      return;
+    } catch (e) {
+      if (e instanceof HostRequestError && e.code === 'NO_SESSION') {
+        say('先打开或新建一个会话再点');
+        return;
+      }
+      say(`请求失败：${(e as { code?: string }).code ?? e}`);
+      return;
+    }
   }
   try {
     const r = await host.prompt({ text, send: true });
@@ -159,4 +175,5 @@ export const fire = async (host: HostClient, text: string, say: (t: string) => v
     say(`${e.code}`);
   }
 };
+
 
