@@ -6,6 +6,10 @@ import { loadShortcuts, fire, colorFor, sortByLabel } from '../shared/shortcuts.
 
 const host = connectHost();
 
+// —— 常量 ——
+const AUTO_KEY = 'oc-shortcuts-autosend'; // 底部开关持久化，默认开
+const REFRESH_INTERVAL_MS = 30_000; // 状态区每 30 秒自动重读一次
+
 // 标题栏控件回调必须同步注册，处理函数用声明式定义在后面
 host.onStatusControl((e) => {
   if (e.id === 'refresh') void refreshNow();
@@ -19,8 +23,6 @@ body{margin:0;font:13px/1.5 system-ui,sans-serif}
 #root{padding:2px 4px;display:flex;flex-direction:column;gap:6px}
 .grid{display:flex;flex-wrap:wrap;gap:6px}
 button{padding:4px 10px;font-size:13px;border:1px solid var(--oc-border,#8888);border-radius:8px;color:var(--oc-fg,inherit);font-weight:700;cursor:pointer}
-button.cmd{background:color-mix(in srgb,var(--primary,#3574f0) 14%,transparent);border-color:var(--primary,#3574f0)}
-button.snip{background:color-mix(in srgb,#8b5cf6 16%,transparent);border-color:#8b5cf6}
 button:disabled{opacity:.5}
 button[hidden]{display:none}
 .bar{display:flex;align-items:center;gap:8px}
@@ -41,13 +43,15 @@ button[hidden]{display:none}
 <div class="t" id="t"></div>
 <div class="res" id="out"></div>`;
 
-const g = document.querySelector('#g') as HTMLElement;
-const out = document.querySelector('#out') as HTMLElement;
-const tEl = document.querySelector('#t') as HTMLElement;
-const bRefresh = document.querySelector('#b-refresh') as HTMLButtonElement;
+const gridEl = document.querySelector('#g') as HTMLElement;
+const resultEl = document.querySelector('#out') as HTMLElement;
+const timeEl = document.querySelector('#t') as HTMLElement;
+const refreshBtn = document.querySelector('#b-refresh') as HTMLButtonElement;
+const autoBtn = document.querySelector('#autosend') as HTMLButtonElement;
+const modeHint = document.querySelector('#modehint') as HTMLElement;
+
 // 底部开关：是否点主按钮就自动发送；关=只填入输入框。持久化默认开（保持老行为）。
 // 注：状态区 iframe 可能禁 localStorage，读写都必须 try 包住，否则首屏抛错导致按钮画不出。
-const AUTO_KEY = 'oc-shortcuts-autosend';
 const loadAuto = (): boolean => {
   try {
     return localStorage.getItem(AUTO_KEY) !== '0';
@@ -61,8 +65,6 @@ const saveAuto = (v: boolean): void => {
   } catch { /* 忽略持久化失败 */ }
 };
 let autoSend = loadAuto();
-const autoBox = document.querySelector('#autosend') as HTMLButtonElement;
-const modeHint = document.querySelector('#modehint') as HTMLElement;
 
 let lastSig = '';
 let curDir: string | null = null;
@@ -71,13 +73,15 @@ let headerControls = false;
 
 const now = (): string => new Date().toTimeString().slice(0, 8);
 
+// 结果行回执：成功正常色，失败红色
 const say = (text: string, bad = false): void => {
-  out.textContent = text;
-  out.title = text;
-  out.classList.toggle('bad', bad);
+  resultEl.textContent = text;
+  resultEl.title = text;
+  resultEl.classList.toggle('bad', bad);
   fit();
 };
 
+// 高度自适应：内容变化后通知宿主调状态区高度
 const fit = (): void => {
   const h = Math.ceil(root.getBoundingClientRect().height);
   void host.setHeight(h).catch(() => undefined);
@@ -88,22 +92,22 @@ const publishControls = async (): Promise<void> => {
   try {
     await host.setStatusControls([{ kind: 'button', id: 'refresh', label: '↻' }]);
     headerControls = true;
-    bRefresh.hidden = true;
+    refreshBtn.hidden = true;
   } catch {
     headerControls = false;
-    bRefresh.hidden = false;
+    refreshBtn.hidden = false;
   }
 };
 
+// 主绘制：命令 + 片段合并按显示名排序，单按钮按底部开关决定发送/填入
 const paint = async (dir: string | null, force = false): Promise<void> => {
   const data = await loadShortcuts(host, dir);
   const sig = JSON.stringify([data.snippets, data.commands]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
   const { snippets, commands } = data;
-  g.innerHTML = '';
+  gridEl.innerHTML = '';
   for (const sc of sortByLabel([...commands, ...snippets])) {
-    // 单按钮：按底部胶囊开关决定自动发送还是只填入
     const b = document.createElement('button');
     const c = colorFor(sc.label);
     b.style.borderColor = c;
@@ -111,45 +115,45 @@ const paint = async (dir: string | null, force = false): Promise<void> => {
     b.textContent = sc.label;
     b.title = sc.text.length > 200 ? sc.text.slice(0, 200) : sc.text;
     b.onclick = () => void fire(host, sc.text, (t) => say(t), hasSession, autoSend);
-    g.appendChild(b);
+    gridEl.appendChild(b);
   }
-  if (g.children.length === 0) g.innerHTML = '<span class="mut">暂无快捷</span>';
-  tEl.textContent = `上次刷新 ${now()}`;
+  if (gridEl.children.length === 0) gridEl.innerHTML = '<span class="mut">暂无快捷</span>';
+  timeEl.textContent = `上次刷新 ${now()}`;
   fit();
 };
 
 // 重读配置：强制重绘，给回执，标题栏与区内按钮共用
 async function refreshNow(): Promise<void> {
-  if (bRefresh.disabled) return;
-  bRefresh.disabled = true;
+  if (refreshBtn.disabled) return;
+  refreshBtn.disabled = true;
   say('重读配置…');
   try {
     await paint(curDir, true);
-    const n = g.children.length;
-    say(`已重读：${n === 1 && g.querySelector('.mut') ? 0 : n} 个快捷`);
+    const n = gridEl.children.length;
+    say(`已重读：${n === 1 && gridEl.querySelector('.mut') ? 0 : n} 个快捷`);
   } catch (e) {
     say(`重读失败：${(e as Error).message?.slice(0, 40) ?? '未知错误'}`, true);
   } finally {
-    bRefresh.disabled = false;
+    refreshBtn.disabled = false;
     fit();
   }
 }
 
-bRefresh.onclick = () => void refreshNow();
+refreshBtn.onclick = () => void refreshNow();
 
 // 底部胶囊开关：切换自动发送/只填入，持久化+回执
-const syncHint = (): void => {
-  autoBox.classList.toggle('on', autoSend);
-  autoBox.setAttribute('aria-checked', String(autoSend));
+const syncAutoHint = (): void => {
+  autoBtn.classList.toggle('on', autoSend);
+  autoBtn.setAttribute('aria-checked', String(autoSend));
   modeHint.textContent = autoSend ? '开：点即发送' : '关：只填入不发送';
 };
-autoBox.onclick = () => {
+autoBtn.onclick = () => {
   autoSend = !autoSend;
   saveAuto(autoSend);
-  syncHint();
+  syncAutoHint();
   say(autoSend ? '已开自动发送' : '已关自动发送，只填入');
 };
-syncHint();
+syncAutoHint();
 
 new ResizeObserver(() => fit()).observe(root);
 
@@ -158,7 +162,7 @@ const safePaint = (dir: string | null, force = false): void => {
   void paint(dir, force).catch((e) => say(`加载失败：${(e as Error).message?.slice(0, 60) ?? e}`, true));
 };
 
-setInterval(() => { if (!document.hidden) void paint(curDir); }, 30000);
+setInterval(() => { if (!document.hidden) void paint(curDir); }, REFRESH_INTERVAL_MS);
 
 host.onReady((ctx) => {
   applyHostReady(ctx, document.documentElement);
@@ -166,7 +170,7 @@ host.onReady((ctx) => {
   hasSession = !!ctx.session;
   // 新宿主把「↻」放到分区标题栏；老宿主保留区内按钮
   if (ctx.features?.statusControls === true) void publishControls();
-  else bRefresh.hidden = false;
+  else refreshBtn.hidden = false;
   safePaint(curDir);
 });
 

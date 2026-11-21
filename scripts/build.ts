@@ -3,11 +3,14 @@
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+// 构建目标：入口 ts → 输出 js + 防缓存 html
+const TARGETS = [
+  { entry: 'src/status/main.ts', out: 'status/main.js', html: 'status/index.html' },
+] as const;
+
 const pkg = JSON.parse(await Bun.file(resolve('package.json')).text()) as { version?: string };
 const stamp = `${pkg.version ?? '0.0.0'}-${Date.now().toString(36)}`;
-for (const target of [
-  { entry: 'src/status/main.ts', out: 'status/main.js', html: 'status/index.html' },
-]) {
+for (const target of TARGETS) {
   const result = await Bun.build({
     entrypoints: [resolve(target.entry)],
     format: 'iife',
